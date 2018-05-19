@@ -17,6 +17,7 @@ namespace HtmlDataExtractTool.ExtractStrategy.Wechat
 
         public override List<WechatAccountInfo> GetFriendsInOneFile(string filePath, FileOrder order)
         {
+            var wechatAccountInfoList = new List<WechatAccountInfo>();
             var regexString = @"好友列表\(\d*\)</a></th></tr></table></div><table.*?</table>((\s<div)|(<br>))";
             if (order == FileOrder.Normal)
             {
@@ -29,9 +30,20 @@ namespace HtmlDataExtractTool.ExtractStrategy.Wechat
 
             var fileContent = File.ReadAllText(filePath).ReplaceNoNeedSymbols();
             var friendContent = Regex.Match(fileContent, regexString).Value;
+
+            // check if it is public account
+            if (order == FileOrder.Last)
+            {
+                var paIndex = GetWechatPublicAccountIndex(fileContent);
+
+                if (paIndex > 0 && fileContent.IndexOf(friendContent) >= paIndex)
+                {
+                    return wechatAccountInfoList;
+                }
+            }
+
             var friendMatches = Regex.Matches(friendContent, @"<tr\S.*?>(.*?)</table>");
 
-            var wechatAccountInfoList = new List<WechatAccountInfo>();
             foreach (Match aMatch in friendMatches)
             {
                 var newWechatAccountInfo = new WechatAccountInfo();
@@ -61,7 +73,16 @@ namespace HtmlDataExtractTool.ExtractStrategy.Wechat
             return wechatAccountInfoList;
         }
 
-        public override List<WechatGroup> GetGroupsInOneFile(string filePath)
+        private int GetWechatPublicAccountIndex(string fileContent)
+        {
+            var match = Regex.Match(fileContent, @"<table.{0,150}?公众号\(\d*\)</a></th></tr></table>");
+            if (match.Success)
+                return fileContent.IndexOf(match.Value);
+
+            return 0;
+        }
+
+        public override List<WechatGroup> GetGroupsInOneFile(string filePath, FileOrder order)
         {
             var fileContent = File.ReadAllText(filePath).ReplaceNoNeedSymbols();
             var tableMatches = Regex.Matches(fileContent, @"<table .{0,350}?成员(帐|账)号</td>.*?</table>((\s<div)|(<br>)|(\s</body>))");
@@ -69,6 +90,8 @@ namespace HtmlDataExtractTool.ExtractStrategy.Wechat
             var groupList = new List<WechatGroup>();
             foreach (Match aMatch in tableMatches)
             {
+
+
                 var newGroup = new WechatGroup();
                 newGroup.Members = new List<WechatAccountInfo>();
                 var memberMatches = Regex.Matches(aMatch.Value, @"<tr\S.*?>(.*?)</table></div></td></tr>");

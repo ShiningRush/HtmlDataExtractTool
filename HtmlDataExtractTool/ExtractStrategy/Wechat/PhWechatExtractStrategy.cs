@@ -55,7 +55,7 @@ namespace HtmlDataExtractTool.ExtractStrategy.Wechat
             return wechatAccountInfoList;
         }
 
-        public override List<WechatGroup> GetGroupsInOneFile(string filePath)
+        public override List<WechatGroup> GetGroupsInOneFile(string filePath, FileOrder order)
         {
             var fileContent = File.ReadAllText(filePath).ReplaceNoNeedSymbols();
             // </div><a class = 'subtitle4'.*?>(.*?)\\(\\d*\\)
@@ -65,7 +65,7 @@ namespace HtmlDataExtractTool.ExtractStrategy.Wechat
             var groupList = new List<WechatGroup>();
             foreach (Match aMatch in tableMatches)
             {
-                if (qqIndex > 0 && fileContent.IndexOf(aMatch.Value) > qqIndex)
+                if (qqIndex > 0 && order == FileOrder.Last && fileContent.IndexOf(aMatch.Value) > qqIndex)
                     continue;
 
                 var memberMatches = Regex.Matches(aMatch.Value, @"<tr .*?>(.*?)</tr>");

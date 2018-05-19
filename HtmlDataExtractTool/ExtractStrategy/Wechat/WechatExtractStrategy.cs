@@ -21,7 +21,7 @@ namespace HtmlDataExtractTool.ExtractStrategy
         
         public abstract List<WechatSearchInfo> GetSearchInfo(string menuFilePath);
         public abstract List<WechatAccountInfo> GetFriendsInOneFile(string filePath, FileOrder order);
-        public abstract List<WechatGroup> GetGroupsInOneFile(string filePath);
+        public abstract List<WechatGroup> GetGroupsInOneFile(string filePath, FileOrder order);
 
         public abstract WechatAccountInfo GetWechatInfoWithSearchInfo(WechatSearchInfo searchInfo);
 
@@ -73,12 +73,21 @@ namespace HtmlDataExtractTool.ExtractStrategy
         public List<WechatGroup> ExtractGroups(WechatSearchInfo wechatAccountinfo)
         {
             var allGroups = new List<WechatGroup>();
-            foreach (var aFile in wechatAccountinfo.GroupsFiles)
+            for (var i = 0; i < wechatAccountinfo.GroupsFiles.Count(); i++)
             {
-                var oneFilesGroups = GetGroupsInOneFile(aFile);
-                var lastGroupMembers = oneFilesGroups.FirstOrDefault(p=> string.IsNullOrEmpty(p.Name))?.Members;
-
-                allGroups.AddRange(oneFilesGroups);
+                var aFile = wechatAccountinfo.GroupsFiles[i];
+                if (i == 0)
+                {
+                    allGroups.AddRange(GetGroupsInOneFile(aFile, FileOrder.First));
+                }
+                else if (i == wechatAccountinfo.FriendsFiles.Count() - 1)
+                {
+                    allGroups.AddRange(GetGroupsInOneFile(aFile, FileOrder.Last));
+                }
+                else
+                {
+                    allGroups.AddRange(GetGroupsInOneFile(aFile, FileOrder.Normal));
+                }
             }
 
             return allGroups;
